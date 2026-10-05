@@ -1,0 +1,45 @@
+name: Package release
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - '*'
+
+jobs:
+  package:
+    name: Attach DirectAdmin.zip
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref_name }}
+
+      - name: Package files into a DirectAdmin folder
+        run: |
+          mkdir -p build/DirectAdmin
+          rsync -a \
+            --exclude=".git" \
+            --exclude=".github" \
+            --exclude="build" \
+            --exclude=".DS_Store" \
+            ./ build/DirectAdmin/
+          (
+            cd build
+            zip -r DirectAdmin.zip DirectAdmin
+          )
+          unzip -l build/DirectAdmin.zip
+
+      - name: Upload zip to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.release.tag_name || github.ref_name }}
+          name: ${{ github.event.release.name || github.ref_name }}
+          files: build/DirectAdmin.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
