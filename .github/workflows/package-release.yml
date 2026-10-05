@@ -6,6 +6,11 @@ on:
   push:
     tags:
       - '*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, for example 1.0.0
+        required: true
 
 jobs:
   package:
@@ -18,7 +23,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name || github.ref_name }}
+          ref: ${{ github.event.release.tag_name || github.sha }}
 
       - name: Package files into a DirectAdmin folder
         run: |
@@ -38,8 +43,9 @@ jobs:
       - name: Upload zip to the release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.release.tag_name || github.ref_name }}
-          name: ${{ github.event.release.name || github.ref_name }}
+          tag_name: ${{ github.event.release.tag_name || inputs.version || github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ github.event.release.name || inputs.version || github.ref_name }}
           files: build/DirectAdmin.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
